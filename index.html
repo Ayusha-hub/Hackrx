@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Insurance Query</title>
+</head>
+<body>
+    <h1>Insurance Claim Query</h1>
+    <form id="queryForm">
+        <label>Name:</label><input type="text" id="name" required><br><br>
+        <label>Aadhar:</label><input type="text" id="aadhar" required><br><br>
+        <label>Policy Info:</label><textarea id="policy" required></textarea><br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="response"></div>
+
+    <script>
+        const form = document.getElementById('queryForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const aadhar = document.getElementById('aadhar').value;
+            const policy = document.getElementById('policy').value;
+
+            const res = await fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, aadhar, policy })
+            });
+
+            const data = await res.json();
+            document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+        });
+    </script>
+</body>
+</html>
