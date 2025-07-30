@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from response_generator import generate_llm_response
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -12,11 +13,15 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/check", methods=["POST"])
-def check_policy():
+@app.route("/")
+def home():
+    return "LLM Insurance Policy API is running"
+
+@app.route("/query", methods=["POST"])
+def query():
     try:
         data = request.json
-        query = data.get("query")
+        query = data.get("query", "")
         if not query:
             return jsonify({"error": "Query missing"}), 400
         response = model.generate_content(f"Check this insurance query: {query}")
