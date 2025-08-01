@@ -35,14 +35,17 @@ def upload_and_query():
 
         # ✅ Step 3: Generate Gemini response
         prompt = f"""
-You are an insurance assistant. 
-Below is a health insurance policy document:
+You are a helpful insurance claim assistant. A user uploaded this policy document:
 
 {text}
 
-Now answer the following user question briefly and clearly:
-"{query_text}"
+Now answer the following question based **only on the document** above.
+
+Question: {query_text}
+
+Answer shortly in 2-3 lines.
 """
+
 
         response = model.generate_content(prompt)
         return jsonify({"response": response.text})
