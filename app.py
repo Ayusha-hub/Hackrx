@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from response_generator import generate_llm_response
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -13,22 +12,45 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 app = Flask(__name__)
 CORS(app)
 
+# Health Check
 @app.route("/")
 def home():
     return "LLM Insurance Policy API is running"
 
-@app.route("/query", methods=["POST"])
-def query():
+# Document Upload + Query Route
+@app.route("/upload", methods=["POST"])
+def upload_and_query():
     try:
-        data = request.json
-        query = data.get("query", "")
-        if not query:
-            return jsonify({"error": "Query missing"}), 400
-        response = model.generate_content(f"Check this insurance query: {query}")
+        # ✅ Step 1: Get document file
+        if 'document' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        file = request.files['document']
+        text = file.read().decode('utf-8')
+
+        # ✅ Step 2: Get user query
+        query_text = request.form.get('query', '')
+        if not query_text:
+            return jsonify({"error": "No query provided"}), 400
+
+        # ✅ Step 3: Generate Gemini response
+        prompt = f"""
+You are an insurance assistant. 
+Below is a health insurance policy document:
+
+{text}
+
+Now answer the following user question briefly and clearly:
+"{query_text}"
+"""
+
+        response = model.generate_content(prompt)
         return jsonify({"response": response.text})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Render sets this automatically
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
