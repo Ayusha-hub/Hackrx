@@ -1,6 +1,6 @@
 flask
 flask-cors
-pdfplumber
-python-docx
 python-dotenv
 google-generativeai
+PyPDF2
+python-docx
