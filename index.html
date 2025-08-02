@@ -2,108 +2,106 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Insurance Claim Checker</title>
+  <title>Document Q&A with Gemini</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f7f9;
-      padding: 30px;
-      color: #333;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(120deg, #84fab0, #8fd3f4);
+      text-align: center;
+      padding: 20px;
     }
-    form {
-      background: #ffffff;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 500px;
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
       margin: auto;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
     }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: 600;
-    }
-    input, textarea {
+    input, textarea, button {
       width: 100%;
       padding: 10px;
-      border-radius: 6px;
+      margin-top: 10px;
+      border-radius: 5px;
       border: 1px solid #ccc;
-      margin-top: 5px;
     }
     button {
       background-color: #007bff;
       color: white;
-      padding: 10px 20px;
+      font-size: 16px;
       border: none;
-      border-radius: 6px;
-      margin-top: 20px;
-      cursor: pointer;
     }
     button:hover {
       background-color: #0056b3;
+      cursor: pointer;
     }
-    #response {
-      margin-top: 20px;
+    .loading {
+      display: none;
       font-weight: bold;
-      color: #2b7a2b;
+      color: orange;
+    }
+    .output {
+      margin-top: 20px;
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: left;
     }
   </style>
 </head>
 <body>
-  <h1>Insurance Claim Query</h1>
-  <form id="queryForm">
-    <label>Name:</label>
-    <input type="text" id="name" required><br><br>
-    
-    <label>Mobile Number:</label>
-    <input type="tel" id="mobile" required><br><br>
-    <button type="button" onclick="sendOTP()">Send OTP</button>
-    <input type="text" id="otp" placeholder="Enter OTP" required><br><br>
+  <h1>📄 Document Q&A with Gemini</h1>
+  <div class="card">
+    <h3>Step 1: Upload Document</h3>
+    <input type="file" id="document" required>
+    <button onclick="uploadDoc()">Upload & Summarize</button>
+    <p class="loading" id="loadingSummary">Processing summary...</p>
+    <div class="output" id="summary"></div>
 
-    <label>Policy Info:</label>
-    <textarea id="policy" required></textarea><br><br>
-
-    <button type="button" onclick="submitQuery()">Submit</button>
-  </form>
-
-  <div id="response"></div>
+    <h3>Step 2: Ask a Question</h3>
+    <textarea id="query" placeholder="Enter your question..." required></textarea>
+    <button onclick="askQuestion()">Ask</button>
+    <p class="loading" id="loadingAnswer">Finding answer...</p>
+    <div class="output" id="answer"></div>
+  </div>
 
   <script>
-    let generatedOTP = "";
+    const API_BASE = "https://your-render-backend-url.onrender.com"; // CHANGE THIS
 
-    function sendOTP() {
-      const mobile = document.getElementById("mobile").value;
-      if (!mobile || mobile.length !== 10) {
-        alert("Enter valid 10-digit mobile number");
+    async function uploadDoc() {
+      const file = document.getElementById("document").files[0];
+      if (!file) {
+        alert("Please upload a document first!");
         return;
       }
-      generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-      alert("OTP sent to " + mobile + ": " + generatedOTP); // Simulated OTP
+      document.getElementById("loadingSummary").style.display = "block";
+      const formData = new FormData();
+      formData.append("document", file);
+
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById("loadingSummary").style.display = "none";
+      document.getElementById("summary").innerText = data.summary || data.error;
     }
 
-    async function submitQuery() {
-      const enteredOTP = document.getElementById("otp").value;
-      if (enteredOTP !== generatedOTP) {
-        alert("Incorrect OTP");
+    async function askQuestion() {
+      const query = document.getElementById("query").value;
+      if (!query) {
+        alert("Please enter a question!");
         return;
       }
-
-      const name = document.getElementById("name").value;
-      const mobile = document.getElementById("mobile").value;
-      const policy = document.getElementById("policy").value;
-
-      const response = await fetch("https://hackrx-2-h9us.onrender.com/query", {
+      document.getElementById("loadingAnswer").style.display = "block";
+      const res = await fetch(`${API_BASE}/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `Name: ${name}, Mobile: ${mobile}, Policy Info: ${policy}`
-        })
+        body: JSON.stringify({ query })
       });
-
-      const data = await response.json();
-      document.getElementById("response").innerText =
-        data.response || data.error || "Something went wrong!";
+      const data = await res.json();
+      document.getElementById("loadingAnswer").style.display = "none";
+      document.getElementById("answer").innerText = data.answer || data.error;
     }
   </script>
 </body>
