@@ -6,53 +6,56 @@ import google.generativeai as genai
 
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 app = Flask(__name__)
 CORS(app)
 
-# Health Check
-@app.route("/")
-def home():
-    return "LLM Insurance Policy API is running"
+# Store last uploaded document text
+uploaded_doc_text = ""
 
-# Document Upload + Query Route
 @app.route("/upload", methods=["POST"])
-def upload_and_query():
+def upload_doc():
+    global uploaded_doc_text
     try:
-        # ✅ Step 1: Get document file
         if 'document' not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
+            return jsonify({"error": "No document uploaded"}), 400
 
         file = request.files['document']
-        text = file.read().decode('utf-8')
+        uploaded_doc_text = file.read().decode('utf-8')
 
-        # ✅ Step 2: Get user query
-        query_text = request.form.get('query', '')
-        if not query_text:
-            return jsonify({"error": "No query provided"}), 400
-
-        # ✅ Step 3: Generate Gemini response
-        prompt = f"""
-You are a helpful insurance claim assistant. A user uploaded this policy document:
-
-{text}
-
-Now answer the following question based **only on the document** above.
-
-Question: {query_text}
-
-Answer shortly in 2-3 lines.
-"""
-
-
+        # Create summary
+        prompt = f"Summarize the following document in 3-4 lines:\n\n{uploaded_doc_text}"
         response = model.generate_content(prompt)
-        return jsonify({"response": response.text})
+        summary = response.text
 
+        return jsonify({"summary": summary})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/ask", methods=["POST"])
+def ask_question():
+    try:
+        data = request.json
+        query_text = data.get("query", "")
+        if not uploaded_doc_text:
+            return jsonify({"error": "No document uploaded yet"}), 400
+        if not query_text:
+            return jsonify({"error": "No query provided"}), 400
+
+        # Ask Gemini using stored document
+        prompt = f"""
+You have read the following document:
+
+{uploaded_doc_text}
+
+Now answer the following question in 2-3 lines:
+{query_text}
+"""
+        response = model.generate_content(prompt)
+        return jsonify({"answer": response.text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
